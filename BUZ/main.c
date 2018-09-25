@@ -32,7 +32,7 @@
 //68 157
 #define TCNT0_US_PER_TICK 1000/56
 
-int state = 0;
+uint8_t state = 0;
 uint8_t pwmint = 0;
 
 ISR(PCINT0_vect)
@@ -43,20 +43,21 @@ ISR(PCINT0_vect)
 	}
 	if (!((PINB & (1<<PWMCTL))))// кончился +pulse ШИМа 1111111111111....0
 	{
+		
 		long lpwm;
 		pwmint = TCNT0-pwmint;//140-254
 		lpwm=(long)pwmint*TCNT0_US_PER_TICK;
-		if (lpwm>1000 && lpwm<2000)
+		if (lpwm>800 && lpwm<2200)
 		{
 			if (lpwm>1500)
-			{
-				PORTB&=~(1<<IGN_OUT);
-			}
+				state = state<30 ? state+1 : 30;
 			else
-			{
+				state = state>0 ? state-1 : 0;
+			if (state>15)
 				PORTB|=(1<<IGN_OUT);
-			}
-		}		
+			else
+				PORTB&=~(1<<IGN_OUT);	
+		}
 	}
 }
  
@@ -99,7 +100,7 @@ int main (void)
     DDRB |= (1 << IGN_OUT);
 	// PWMCTL is an input  
 	DDRB &= ~(1 << PWMCTL);  
-	
+	state=0;
     gpio_setup();
     pwm_setup();
 	setupint();
